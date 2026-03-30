@@ -159,11 +159,30 @@ function createGalleryCard(apodItem) {
   card.setAttribute('role', 'button');
   card.setAttribute('aria-label', `Open details for ${apodItem.title}`);
 
+  const mediaWrapper = document.createElement('div');
+  mediaWrapper.className = 'gallery-media';
+
   const image = document.createElement('img');
   image.src = apodItem.imageUrl;
   image.alt = apodItem.title || 'NASA Astronomy Picture of the Day';
   image.loading = 'lazy';
-  card.appendChild(image);
+  mediaWrapper.appendChild(image);
+
+  const overlay = document.createElement('div');
+  overlay.className = 'gallery-overlay';
+
+  const overlayText = document.createElement('span');
+  overlayText.className = 'overlay-action';
+  overlayText.textContent = 'View details';
+
+  const mediaBadge = document.createElement('span');
+  mediaBadge.className = 'media-badge';
+  mediaBadge.textContent = apodItem.mediaType.toUpperCase();
+
+  overlay.appendChild(overlayText);
+  overlay.appendChild(mediaBadge);
+  mediaWrapper.appendChild(overlay);
+  card.appendChild(mediaWrapper);
 
   const title = document.createElement('p');
   title.innerHTML = `<strong>${apodItem.title}</strong> (${apodItem.date})`;
