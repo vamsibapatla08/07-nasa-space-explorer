@@ -256,15 +256,15 @@ function renderGallery(apodItems) {
   });
 }
 
-// Fetch APOD entries between selected start and end date
+// Fetch APOD entries between selected start and end date, expanding range if needed to get 9 items
 async function fetchApodByDateRange(startDate, endDate) {
-  const baseParams = {
-    start_date: startDate,
-    end_date: endDate,
-    thumbs: 'true'
-  };
+  const requestWithKey = async (apiKey, rangeStart, rangeEnd) => {
+    const baseParams = {
+      start_date: rangeStart,
+      end_date: rangeEnd,
+      thumbs: 'true'
+    };
 
-  const requestWithKey = async (apiKey) => {
     const params = new URLSearchParams({
       api_key: apiKey,
       ...baseParams
@@ -276,20 +276,43 @@ async function fetchApodByDateRange(startDate, endDate) {
     return { response, data };
   };
 
-  let { response, data } = await requestWithKey(API_KEY);
+  let currentStart = new Date(startDate);
+  let currentEnd = new Date(endDate);
+  let allItems = [];
+  let attempts = 0;
+  const maxAttempts = 3; // Try expanding up to 3 times
 
-  // If custom key fails, retry with NASA demo key so students can still use the app
-  const invalidApiKey = data?.error?.code === 'API_KEY_INVALID' || data?.error?.message?.includes('api_key');
-  if (!response.ok && invalidApiKey) {
-    ({ response, data } = await requestWithKey(FALLBACK_API_KEY));
+  while (allItems.length < GALLERY_ITEM_COUNT && attempts < maxAttempts) {
+    const rangeStart = formatDate(currentStart);
+    const rangeEnd = formatDate(currentEnd);
+
+    let { response, data } = await requestWithKey(API_KEY, rangeStart, rangeEnd);
+
+    // If custom key fails, retry with NASA demo key so students can still use the app
+    const invalidApiKey = data?.error?.code === 'API_KEY_INVALID' || data?.error?.message?.includes('api_key');
+    if (!response.ok && invalidApiKey) {
+      ({ response, data } = await requestWithKey(FALLBACK_API_KEY, rangeStart, rangeEnd));
+    }
+
+    if (!response.ok) {
+      const errorMessage = data?.error?.message || 'Unable to load NASA images right now.';
+      throw new Error(errorMessage);
+    }
+
+    allItems = normalizeApodItems(data);
+
+    // If we have enough items, return them
+    if (allItems.length >= GALLERY_ITEM_COUNT) {
+      return allItems;
+    }
+
+    // If not, expand the date range and try again
+    currentStart.setDate(currentStart.getDate() - 5);
+    currentEnd.setDate(currentEnd.getDate() + 5);
+    attempts++;
   }
 
-  if (!response.ok) {
-    const errorMessage = data?.error?.message || 'Unable to load NASA images right now.';
-    throw new Error(errorMessage);
-  }
-
-  return normalizeApodItems(data);
+  return allItems;
 }
 
 // Handle user click: validate dates, fetch data, render results
