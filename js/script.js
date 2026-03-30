@@ -55,6 +55,7 @@ function toEmbedUrl(url) {
     }
 
     return url;
+
   } catch {
     return url;
   }
@@ -68,6 +69,7 @@ function openModal(apodItem) {
 
     modalVideo.hidden = false;
     modalVideo.src = apodItem.embedUrl;
+    
   } else {
     modalVideo.hidden = true;
     modalVideo.src = '';
@@ -124,9 +126,10 @@ function createGalleryCard(apodItem) {
     const video = document.createElement('iframe');
     video.src = apodItem.embedUrl;
     video.title = apodItem.title || 'NASA Astronomy Picture of the Day video';
-    video.loading = 'lazy';
+    //video.loading = 'lazy';
     video.setAttribute('allowfullscreen', 'true');
     card.appendChild(video);
+    
   } else {
     const image = document.createElement('img');
     image.src = apodItem.imageUrl;
