@@ -27,6 +27,9 @@ const spaceFacts = [
 // NASA APOD endpoint and public demo key
 const APOD_URL = 'https://api.nasa.gov/planetary/apod';
 const API_KEY = 'idbKGPLpQCKzgo3O3ROXP1rgezft5NtlcG4ndUds';
+const FALLBACK_API_KEY = 'DEMO_KEY';
+const APOD_FIRST_DATE = '1995-06-16';
+const GALLERY_ITEM_COUNT = 9;
 
 // Set up the date inputs (from dateRange.js)
 setupDateInputs(startInput, endInput);
@@ -38,6 +41,40 @@ function showRandomSpaceFact() {
 }
 
 showRandomSpaceFact();
+
+// Format Date object as YYYY-MM-DD for API requests and date inputs
+function formatDate(date) {
+  return date.toISOString().split('T')[0];
+}
+
+// Build a 9-day consecutive range from the selected start date
+function buildNineDayRange(startDateValue) {
+  const startDate = new Date(startDateValue);
+  const todayDate = new Date();
+  const minDate = new Date(APOD_FIRST_DATE);
+
+  const endDate = new Date(startDate);
+  endDate.setDate(startDate.getDate() + 8);
+
+  // If range would pass today, shift backward so it still contains 9 days
+  if (endDate > todayDate) {
+    endDate.setTime(todayDate.getTime());
+    startDate.setTime(todayDate.getTime());
+    startDate.setDate(todayDate.getDate() - 8);
+  }
+
+  // If range would go before APOD start date, shift forward
+  if (startDate < minDate) {
+    startDate.setTime(minDate.getTime());
+    endDate.setTime(minDate.getTime());
+    endDate.setDate(minDate.getDate() + 8);
+  }
+
+  return {
+    startDate: formatDate(startDate),
+    endDate: formatDate(endDate)
+  };
+}
 
 // Convert common video links into embeddable links (for example YouTube watch URLs)
 function toEmbedUrl(url) {
@@ -69,13 +106,13 @@ function openModal(apodItem) {
 
     modalVideo.hidden = false;
     modalVideo.src = apodItem.embedUrl;
-    
+
   } else {
     modalVideo.hidden = true;
     modalVideo.src = '';
 
     modalImage.hidden = false;
-    modalImage.src = apodItem.imageUrl;
+    modalImage.src = apodItem.fullImageUrl;
     modalImage.alt = apodItem.title;
   }
 
@@ -122,21 +159,11 @@ function createGalleryCard(apodItem) {
   card.setAttribute('role', 'button');
   card.setAttribute('aria-label', `Open details for ${apodItem.title}`);
 
-  if (apodItem.mediaType === 'video') {
-    const video = document.createElement('iframe');
-    video.src = apodItem.embedUrl;
-    video.title = apodItem.title || 'NASA Astronomy Picture of the Day video';
-    //video.loading = 'lazy';
-    video.setAttribute('allowfullscreen', 'true');
-    card.appendChild(video);
-    
-  } else {
-    const image = document.createElement('img');
-    image.src = apodItem.imageUrl;
-    image.alt = apodItem.title || 'NASA Astronomy Picture of the Day';
-    image.loading = 'lazy';
-    card.appendChild(image);
-  }
+  const image = document.createElement('img');
+  image.src = apodItem.imageUrl;
+  image.alt = apodItem.title || 'NASA Astronomy Picture of the Day';
+  image.loading = 'lazy';
+  card.appendChild(image);
 
   const title = document.createElement('p');
   title.innerHTML = `<strong>${apodItem.title}</strong> (${apodItem.date})`;
@@ -164,10 +191,12 @@ function normalizeApodItems(apodData) {
   return apodItems
     .map((item) => {
       const mediaType = item.media_type === 'video' ? 'video' : 'image';
+      const imageUrl = mediaType === 'image' ? item.url : (item.thumbnail_url || 'img/nasa-worm-logo.png');
 
       return {
         mediaType,
-        imageUrl: mediaType === 'image' ? item.url : item.thumbnail_url || '',
+        imageUrl,
+        fullImageUrl: mediaType === 'image' ? (item.hdurl || item.url) : imageUrl,
         embedUrl: mediaType === 'video' ? toEmbedUrl(item.url) : '',
         title: item.title,
         date: item.date,
@@ -192,8 +221,9 @@ function renderGallery(apodItems) {
 
   // Show newest first for easier browsing
   const sortedItems = [...apodItems].sort((a, b) => b.date.localeCompare(a.date));
+  const nineItems = sortedItems.slice(0, GALLERY_ITEM_COUNT);
 
-  sortedItems.forEach((item) => {
+  nineItems.forEach((item) => {
     const card = createGalleryCard(item);
     gallery.appendChild(card);
   });
@@ -201,15 +231,31 @@ function renderGallery(apodItems) {
 
 // Fetch APOD entries between selected start and end date
 async function fetchApodByDateRange(startDate, endDate) {
-  const params = new URLSearchParams({
-    api_key: API_KEY,
+  const baseParams = {
     start_date: startDate,
     end_date: endDate,
     thumbs: 'true'
-  });
+  };
 
-  const response = await fetch(`${APOD_URL}?${params.toString()}`);
-  const data = await response.json();
+  const requestWithKey = async (apiKey) => {
+    const params = new URLSearchParams({
+      api_key: apiKey,
+      ...baseParams
+    });
+
+    const response = await fetch(`${APOD_URL}?${params.toString()}`);
+    const data = await response.json();
+
+    return { response, data };
+  };
+
+  let { response, data } = await requestWithKey(API_KEY);
+
+  // If custom key fails, retry with NASA demo key so students can still use the app
+  const invalidApiKey = data?.error?.code === 'API_KEY_INVALID' || data?.error?.message?.includes('api_key');
+  if (!response.ok && invalidApiKey) {
+    ({ response, data } = await requestWithKey(FALLBACK_API_KEY));
+  }
 
   if (!response.ok) {
     const errorMessage = data?.error?.message || 'Unable to load NASA images right now.';
@@ -221,18 +267,23 @@ async function fetchApodByDateRange(startDate, endDate) {
 
 // Handle user click: validate dates, fetch data, render results
 getImagesButton.addEventListener('click', async () => {
-  const startDate = startInput.value;
-  const endDate = endInput.value;
+  const selectedStartDate = startInput.value;
+  const selectedEndDate = endInput.value;
 
-  if (!startDate || !endDate) {
+  if (!selectedStartDate || !selectedEndDate) {
     showGalleryMessage('Please choose both a start date and end date.', '⚠️');
     return;
   }
 
-  if (startDate > endDate) {
+  if (selectedStartDate > selectedEndDate) {
     showGalleryMessage('Start date must be before or equal to end date.', '⚠️');
     return;
   }
+
+  // Always fetch exactly 9 consecutive APOD days from the selected start date
+  const { startDate, endDate } = buildNineDayRange(selectedStartDate);
+  startInput.value = startDate;
+  endInput.value = endDate;
 
   try {
     getImagesButton.disabled = true;
