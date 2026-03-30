@@ -21,7 +21,15 @@ const spaceFacts = [
   'Sunlight takes about 8 minutes and 20 seconds to travel from the Sun to Earth.',
   'Saturn could float in water because its average density is lower than water.',
   'A year on Mercury is only 88 Earth days.',
-  'There are more stars in the universe than grains of sand on all of Earth\'s beaches.'
+  'There are more stars in the universe than grains of sand on all of Earth\'s beaches.',
+  'If you could stand on the surface of the Sun, you would weigh 28 times more than you do on Earth.',
+  'The Great Red Spot on Jupiter is a storm that has been raging for at least 400 years.',
+  'A day on Venus is 243 Earth days, but a year on Venus is only 225 Earth days.',
+  'The Moon is slowly drifting away from Earth at about 1.5 inches per year.',
+  'Mars has the largest volcano in the solar system, called Olympus Mons.',
+  'The Andromeda Galaxy is on a collision course with our Milky Way Galaxy and will merge in about 5 billion years.',
+  'Uranus rotates on its side, likely due to a collision with an Earth-sized object early in its history.',
+  'Light from the Sun takes about 8 minutes and 20 seconds to reach Earth, so we always see the Sun as it was 8 minutes ago.'
 ];
 
 // NASA APOD endpoint and public demo key
