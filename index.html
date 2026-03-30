@@ -1,11 +1,13 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>NASA Space Explorer</title>
   <link href="style.css" rel="stylesheet" type="text/css" />
 </head>
+
 <body>
   <div class="container">
     <header class="site-header">
@@ -27,7 +29,19 @@
     </div>
   </div>
 
+  <!-- Modal for displaying APOD details -->
+  <div id="apodModal" class="modal" aria-hidden="true">
+    <div class="modal-content" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+      <button id="closeModalBtn" class="modal-close" type="button" aria-label="Close details modal">&times;</button>
+      <img id="modalImage" src="" alt="" />
+      <h2 id="modalTitle"></h2>
+      <p id="modalDate" class="modal-date"></p>
+      <p id="modalExplanation"></p>
+    </div>
+  </div>
+
   <script src="js/dateRange.js"></script>
   <script src="js/script.js"></script>
 </body>
+
 </html>
