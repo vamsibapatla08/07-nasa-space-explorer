@@ -21,6 +21,11 @@
       <button>Get Space Images</button>
     </div>
 
+    <div id="factModal" class="fact-modal" role="status" aria-live="polite">
+      <h2>Did you know?</h2>
+      <p id="factText"></p>
+    </div>
+
     <div id="gallery" class="gallery">
       <div class="placeholder">
         <div class="placeholder-icon">🔭</div>
@@ -34,6 +39,7 @@
     <div class="modal-content" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
       <button id="closeModalBtn" class="modal-close" type="button" aria-label="Close details modal">&times;</button>
       <img id="modalImage" src="" alt="" />
+      <iframe id="modalVideo" src="" title="APOD video player" allowfullscreen hidden></iframe>
       <h2 id="modalTitle"></h2>
       <p id="modalDate" class="modal-date"></p>
       <p id="modalExplanation"></p>
